@@ -58,11 +58,11 @@ public class Snapshot {
         messages.clear();
     }
 
-    private void removeTheOldest() {
+    private synchronized void removeTheOldest() {
         messages.remove(messages.stream().max(Comparator.comparing(Message::getTime)).orElseGet(null));
     }
 
-    private boolean isTheOldestValid(LocalTime now) {
+    private synchronized boolean isTheOldestValid(LocalTime now) {
         Message m = messages.stream().max(Comparator.comparing(Message::getTime)).orElseGet(null);
         if (m != null) {
             if (m.isValid(now)) {

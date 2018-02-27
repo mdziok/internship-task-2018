@@ -4,13 +4,14 @@ import java.time.LocalTime;
 import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class Snapshot {
 
-    private List<Message> messages;
+    private ConcurrentLinkedQueue<Message> messages;
 
     private Snapshot() {
-        messages = new LinkedList<>();
+        messages = new ConcurrentLinkedQueue<>();
     }
 
     public static Snapshot getInstance() {
@@ -21,7 +22,7 @@ public class Snapshot {
         private static final Snapshot INSTANCE = new Snapshot();
     }
 
-    public synchronized void add(Message message) {
+    public void add(Message message) {
         messages.add(message);
         while (messages.size() > 100) {
             removeTheOldest();
@@ -33,7 +34,7 @@ public class Snapshot {
         return this;
     }
 
-    private synchronized void updateSnapshot() {
+    private void updateSnapshot() {
         if (!messages.isEmpty()) {
             LocalTime now = LocalTime.now();
             while (messages.size() > 100) {
@@ -45,11 +46,11 @@ public class Snapshot {
         }
     }
 
-    public synchronized List<Message> getMessages() {
+    public List<Message> getMessages() {
         return new LinkedList<>(messages);
     }
 
-    public synchronized long numberOfErrorMessages() {
+    public long numberOfErrorMessages() {
         updateSnapshot();
         return messages.stream().filter(message -> message.getErrorCode() > 299).count();
     }
@@ -58,11 +59,11 @@ public class Snapshot {
         messages.clear();
     }
 
-    private synchronized void removeTheOldest() {
+    private void removeTheOldest() {
         messages.remove(messages.stream().max(Comparator.comparing(Message::getTime)).orElseGet(null));
     }
 
-    private synchronized boolean isTheOldestValid(LocalTime now) {
+    private boolean isTheOldestValid(LocalTime now) {
         Message m = messages.stream().max(Comparator.comparing(Message::getTime)).orElseGet(null);
         if (m != null) {
             if (m.isValid(now)) {
